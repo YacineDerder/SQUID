@@ -32,6 +32,7 @@ int main(int argc, char **argv) {
 
     // Set data rates
     if (setMessageRate(mavlink::common::msg::GPS_GLOBAL_ORIGIN::MSG_ID,    1.0f) == 0) rateSet_failed = 1; // mavros/global_postion/gp_offset
+    if (setMessageRate(mavlink::common::msg::BATTERY_STATUS::MSG_ID,       1.0f) == 0) rateSet_failed = 1; // mavros/battery
     if (setMessageRate(mavlink::common::msg::ATTITUDE::MSG_ID,            20.0f) == 0) rateSet_failed = 1; // mavros/imu/data
     if (setMessageRate(mavlink::common::msg::ATTITUDE_QUATERNION::MSG_ID, 20.0f) == 0) rateSet_failed = 1; // mavros/imu/data
     if (setMessageRate(mavlink::common::msg::RAW_IMU::MSG_ID,            200.0f) == 0) rateSet_failed = 1; // mavros/imu/data_raw

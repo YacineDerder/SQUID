@@ -28,31 +28,46 @@ RUN chmod a+x install_geographiclib_datasets.sh
 RUN ./install_geographiclib_datasets.sh
 RUN rm install_geographiclib_datasets.sh
 
-# Robot localization
-RUN apt install -y ros-noetic-robot-localization ros-noetic-imu-tools
+# Dronekit
+RUN pip3 install dronekit pyserial
+
+# Robot localization and Dronekit
+RUN apt install -y ros-noetic-robot-localization ros-noetic-imu-tools 
+
+# inspection tools
+RUN apt install -y ros-noetic-rqt-image-view xauth iproute2
+RUN touch ~/.Xauthority
 
 # squid package install
-RUN apt -y install screen
-COPY squid.launch /
+RUN apt -y install screen python-is-python3 dos2unix
 RUN source /opt/ros/noetic/setup.bash && \
     cd ~/workspace/src/ && \ 
     catkin_create_pkg squid_package mavros ov_msckf usb_cam && \
-    mkdir -p ~/workspace/src/squid_package/launch && \
+    mkdir -p ~/workspace/src/squid_package/launch
+
+COPY squid.launch /
+COPY scripts /scripts
+COPY src /tmp/src
+
+RUN find /scripts -type f -exec dos2unix {} \;
+RUN find /scripts -type f -exec chmod +x {} \;
+
+RUN mv /scripts ~/workspace/src/squid_package/ && \
     cp /squid.launch ~/workspace/src/squid_package/launch/squid.launch && \
-    cd .. && \
-    catkin build squid_package -j3
+    mv /tmp/src ~/workspace/src/squid_package/
+
+# Update CMakeLists.txt
+RUN echo 'add_executable(setRates src/setRates.cpp)' >> ~/workspace/src/squid_package/CMakeLists.txt && \
+    echo 'target_link_libraries(setRates ${catkin_LIBRARIES})' >> ~/workspace/src/squid_package/CMakeLists.txt
 
 RUN echo "source ~/workspace/devel/setup.bash" >> ~/.bashrc
 
-# inspection tools
-RUN apt install -y ros-noetic-rqt-image-view xauth
-RUN touch ~/.Xauthority
-
-# Add test scripts
-COPY test.py /
+# Build the package
+RUN source /opt/ros/noetic/setup.bash && \
+    cd ~/workspace/ && \
+    catkin build squid_package
 
 # Make shared folder
 RUN mkdir shared_folder
 
-# Roslaunch squid.launch on container creation
-CMD [ "/bin/bash", "-c", "xauth add $DISPLAY . 39fd949eee6479efc1cbc9b937d81e5d; roslaunch squid.launch" ]
+CMD [ "/bin/bash", "-c", "source /opt/ros/noetic/setup.bash && source ~/workspace/devel/setup.bash && roslaunch squid_package squid.launch" ]

@@ -18,17 +18,16 @@
     <arg name="node_start_delay" default="10.0" />  
 
     <!-- Launch stereo camera -->
-     <!-- launch-prefix="bash -c 'sleep 2; $0 $@' " -->
     <node name="stereo_image_splitter" pkg="squid_package" type="split_stereo_image.py" output="screen">
-        <param name="video_device" value="/dev/video6"/>
+        <param name="video_device" value="/dev/video2"/>
         <param name="frame_rate" value="30" />
         <param name="video_width" value="640" />
         <param name="video_height" value="240" />
     </node>
 
     <!-- Launch camera_right -->
-    <!-- <node name="camera_right" pkg="usb_cam" type="usb_cam_node" output="screen" launch-prefix="screen -L -dmS camera_down">
-        <param name="video_device" value="/dev/video0"/>
+    <!-- <node name="camera_right" pkg="usb_cam" type="usb_cam_node" output="screen" launch-prefix="screen -L -dmS camera_right">
+        <param name="video_device" value="/dev/video4"/>
         <param name="image_width" value="320"/>
         <param name="image_height" value="240"/>
         <param name="pixel_format" value="yuyv"/>
@@ -38,7 +37,7 @@
 
     <!-- Launch camera_left -->
     <!-- <node name="camera_left" pkg="usb_cam" type="usb_cam_node" output="screen" launch-prefix="screen -L -dmS camera_down">
-        <param name="video_device" value="/dev/video4"/>
+        <param name="video_device" value="/dev/video6"/>
         <param name="image_width" value="320"/>
         <param name="image_height" value="240"/>
         <param name="pixel_format" value="yuyv"/>
@@ -48,7 +47,7 @@
 
     <!-- Launch camera_down -->
     <node name="camera_down" pkg="usb_cam" type="usb_cam_node" output="screen" launch-prefix="screen -L -dmS camera_down">
-        <param name="video_device" value="/dev/video2"/>
+        <param name="video_device" value="/dev/video0"/>
         <param name="image_width" value="320"/>
         <param name="image_height" value="240"/>
         <param name="pixel_format" value="yuyv"/>
@@ -57,26 +56,62 @@
     </node>
 
     <!-- Launch the servo_controller node -->
-    <!-- <node name="servo_controller_node" pkg="squid_package" type="deploy_arms.py" output="screen">
+    <node name="servo_controller_node" pkg="squid_package" type="deploy_arms.py" output="screen">
         <param name="acceleration_threshold" value="2.0"/>
         <param name="servo_high_value" value="1100"/>
         <param name="servo_low_value" value="1475"/>
-        <param name="deploy_delay" value="1"/>
-        <param name="lock_delay" value="1"/>
-    </node> -->
+        <param name="deploy_delay" value="0.3"/>
+        <param name="lock_delay" value="1.5"/>
+    </node>
 
-    <!-- Launch the openvins node -->
+    <!-- Launch the openvins node in namespace 'down' -->
     <!-- ALL, DEBUG, INFO, WARNING, ERROR, SILENT -->
-    <arg name="openvins_folder_name" default="stereo" />  
-    <include file="$(find ov_msckf)/launch/subscribe.launch">
-        <arg name="config_path" value="/shared_folder/openvins_config_$(arg openvins_folder_name)/estimator_config.yaml"/> 
-        <arg name="use_stereo" value="false"/>
-        <arg name="max_cameras" value="1"/>
-        <arg name="verbosity" value="WARNING" /> 
-    </include>
+    <!-- <group ns="down">
+        <include file="$(find ov_msckf)/launch/subscribe.launch">
+            <arg name="config_path" value="/shared_folder/openvins_config_down/estimator_config.yaml"/> 
+            <arg name="use_stereo" value="false"/>
+            <arg name="max_cameras" value="1"/>
+            <arg name="verbosity" value="WARNING" /> 
+        </include>
+    </group> -->
+
+    <!-- Launch another instance of the openvins node in namespace 'right' -->
+    <!-- <group ns="right">
+        <include file="$(find ov_msckf)/launch/subscribe.launch">
+            <arg name="config_path" value="/shared_folder/openvins_config_right/estimator_config.yaml"/> 
+            <arg name="use_stereo" value="false"/>
+            <arg name="max_cameras" value="1"/>
+            <arg name="verbosity" value="WARNING" /> 
+        </include>
+    </group> -->
+
+    <!-- Launch another instance of the openvins node in namespace 'left' -->
+    <!-- <group ns="left">
+        <include file="$(find ov_msckf)/launch/subscribe.launch">
+            <arg name="config_path" value="/shared_folder/openvins_config_left/estimator_config.yaml"/> 
+            <arg name="use_stereo" value="false"/>
+            <arg name="max_cameras" value="1"/>
+            <arg name="verbosity" value="WARNING" /> 
+        </include>
+    </group> -->
+
+    <group ns="stereo">
+        <include file="$(find ov_msckf)/launch/subscribe.launch">
+            <arg name="config_path" value="/shared_folder/openvins_config_stereo/estimator_config.yaml"/> 
+            <arg name="use_stereo" value="true"/>
+            <arg name="max_cameras" value="2"/>
+            <arg name="verbosity" value="WARNING" /> 
+        </include>
+    </group>
 
     <!-- Launch VIO relay -->
-    <node name="vio_relay" pkg="squid_package" type="vio_relay.py" output="screen"/>
+    <node name="vio_relay" pkg="squid_package" type="vio_relay_no_compass.py" output="screen"/>
+
+    <!-- Launch gyro integration -->
+    <node name="gyro_integ" pkg="squid_package" type="gyro_integ.py" output="screen"/>
+
+    <!-- Launch gyro reset -->
+    <node name="gyro_reset" pkg="squid_package" type="gyro_reset.py" output="screen"/>
 
     <!-- Launch set origin -->
     <node name="set_origin" pkg="squid_package" type="set_origin.py" output="screen"/>
